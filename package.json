@@ -1,0 +1,22 @@
+{
+  "name": "@lucapimenta/copywriting-mcp",
+  "version": "1.0.0",
+  "description": "Copywriting MCP Server — Direct Response quality gates, validation, and semantic search",
+  "bin": {
+    "copywriting-mcp": "./bin/cli.js"
+  },
+  "scripts": {
+    "install-server": "node bin/cli.js install",
+    "start": "node bin/cli.js start",
+    "build": "cd server && npm run build"
+  },
+  "engines": { "node": ">=18.0.0" },
+  "files": ["bin/", "server/", "installer/"],
+  "keywords": ["mcp", "copywriting", "claude-code", "direct-response", "quality-gates"],
+  "author": "Luca Pimenta",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lckx777/copywriting-mcp.git"
+  }
+}
