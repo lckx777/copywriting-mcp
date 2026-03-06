@@ -123,7 +123,7 @@ O installer adiciona automaticamente ao `~/.claude/mcp.json`:
 ## Requisitos
 
 - Node.js >= 18
-- Copy Chief BLACK instalado (`npx @lucapimenta/copy-chief-black install`)
+- Copy Chief BLACK v2.0+ instalado (`npx @lucapimenta/copy-chief-black install`)
 - Claude Code com suporte a MCP
 
 ## Pacotes Relacionados
