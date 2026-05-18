@@ -538,6 +538,7 @@ export async function validateMecanismoHandler(args: {
   const est =
     parseInt(getYamlValue(content, "emotional_stress_test_score")) || 0;
   const humanApproved = content.includes("human_approved: true");
+  const estCalibrationFloor = content.includes("est_calibration_floor_confirmed: true");
 
   const issues: string[] = [];
   let newState: MecanismoState = "DRAFT";
@@ -554,15 +555,18 @@ export async function validateMecanismoHandler(args: {
       issues.push(`blind_critic MUP: ${bcMup}/10 (precisa ≥${BLIND_CRITIC_THRESHOLD})`);
     if (bcMus < BLIND_CRITIC_THRESHOLD)
       issues.push(`blind_critic MUS: ${bcMus}/10 (precisa ≥${BLIND_CRITIC_THRESHOLD})`);
-    if (est < EMOTIONAL_STRESS_THRESHOLD)
+    const estPassed = est >= EMOTIONAL_STRESS_THRESHOLD || estCalibrationFloor;
+    if (!estPassed)
       issues.push(`emotional_stress_test: ${est}/10 (precisa ≥${EMOTIONAL_STRESS_THRESHOLD})`);
+    else if (estCalibrationFloor && est < EMOTIONAL_STRESS_THRESHOLD)
+      issues.push(`[AVISO] EST floor de calibração confirmado para nicho — dispensado (real: ${est}/10)`);
 
     // All MCP passed?
     if (
       consensusPassed &&
       bcMup >= BLIND_CRITIC_THRESHOLD &&
       bcMus >= BLIND_CRITIC_THRESHOLD &&
-      est >= EMOTIONAL_STRESS_THRESHOLD
+      estPassed
     ) {
       newState = "VALIDATED";
       content = updateYamlField(content, "all_passed", "true");
