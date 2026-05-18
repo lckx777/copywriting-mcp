@@ -372,14 +372,13 @@ Use create_mecanismo para criar o arquivo canônico.`;
   const state = getYamlValue(content, "state");
   const sexyCause = getYamlValue(content, "sexy_cause");
   const gimmickName =
-    content.match(/gimmick_name:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] || "";
+    content.match(/^\s*gimmick_name:\s*["']?([^"'\n{[\-#][^\n]*)/m)?.[1]?.trim() || "";
   const ingredienteHero =
-    content.match(/ingrediente_hero:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] ||
-    "";
+    content.match(/^\s*ingrediente_hero:\s*["']?([^"'\n{[\-#][^\n]*)/m)?.[1]?.trim() || "";
   const authorityHook =
-    content.match(/authority_hook:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] || "";
+    content.match(/^\s*authority_hook:\s*["']?([^"'\n{[\-#][^\n]*)/m)?.[1]?.trim() || "";
   const nomeSistema =
-    content.match(/nome_sistema:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] || "";
+    content.match(/^\s*nome_sistema:\s*["']?([^"'\n{[\-#][^\n]*)/m)?.[1]?.trim() || "";
 
   // Extract scores
   const consensusPassed = content.includes("consensus_passed: true");
@@ -525,7 +524,7 @@ export async function validateMecanismoHandler(args: {
 
   const missingFields: string[] = [];
   for (const field of requiredFields) {
-    const regex = new RegExp(`${field.path}:\\s*\\n\\s*name:\\s*["']?([^"'\\n]+)`);
+    const regex = new RegExp(`^\\s*${field.path}:\\s*["']?([^"'\\n{[\\-#][^\\n]*)`, "m");
     const match = content.match(regex);
     if (!match || !match[1] || match[1].trim() === "") {
       missingFields.push(field.label);
