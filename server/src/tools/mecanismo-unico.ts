@@ -284,6 +284,46 @@ function getYamlValue(content: string, key: string): string {
   return match ? match[1].trim() : "";
 }
 
+// Escape regex metacharacters so `field` is safe to interpolate into a
+// RegExp literal. (Current callers pass identifier-safe strings, but this
+// prevents future callers like `field.path` from fuzzy-matching `field_path`.)
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Helper: Extract a flat-form YAML scalar value.
+ *
+ * Matches one of three alternations after `^[ \t]*field:[ \t]*`:
+ *   "value"   → capture group 1 (double-quoted; inner ' kept)
+ *   'value'   → capture group 2 (single-quoted; inner " kept)
+ *   value     → capture group 3 (unquoted; inline `# comment` stripped)
+ *
+ * Rejects (returns ""):
+ *   commented-out lines       (`# field: ...`)
+ *   container/list openers    (`field: { ... }`, `field: [ ... ]`, `field: -`)
+ *   empty values              (`field:`)
+ *   whitespace-only values    (`field:    `)
+ *
+ * Replaces the prior nested-only regex (`field:\n  name: value`), which
+ * silently returned empty strings against real flat-form mechanism files
+ * and caused validate_mecanismo to false-fail every required field.
+ *
+ * Whitespace is excluded from the first char of the unquoted capture so
+ * `[ \t]*` can't backtrack and leak a leading space into the capture
+ * (which would defeat the structural-opener guard).
+ */
+function extractFlatYamlField(content: string, field: string): string {
+  const re = new RegExp(
+    `^[ \\t]*${escapeRegex(field)}:[ \\t]*` +
+      `(?:"([^"\\n]*)"|'([^'\\n]*)'|([^\\s#{}\\[\\]\\-"'][^\\n#]*))`,
+    "m"
+  );
+  const m = content.match(re);
+  if (!m) return "";
+  return (m[1] ?? m[2] ?? m[3] ?? "").trim();
+}
+
 // Helper: Update YAML field
 function updateYamlField(
   content: string,
@@ -371,15 +411,10 @@ Use create_mecanismo para criar o arquivo canônico.`;
   // Extract key values
   const state = getYamlValue(content, "state");
   const sexyCause = getYamlValue(content, "sexy_cause");
-  const gimmickName =
-    content.match(/gimmick_name:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] || "";
-  const ingredienteHero =
-    content.match(/ingrediente_hero:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] ||
-    "";
-  const authorityHook =
-    content.match(/authority_hook:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] || "";
-  const nomeSistema =
-    content.match(/nome_sistema:\s*\n\s*name:\s*["']?([^"'\n]+)/)?.[1] || "";
+  const gimmickName = extractFlatYamlField(content, "gimmick_name");
+  const ingredienteHero = extractFlatYamlField(content, "ingrediente_hero");
+  const authorityHook = extractFlatYamlField(content, "authority_hook");
+  const nomeSistema = extractFlatYamlField(content, "nome_sistema");
 
   // Extract scores
   const consensusPassed = content.includes("consensus_passed: true");
@@ -525,9 +560,7 @@ export async function validateMecanismoHandler(args: {
 
   const missingFields: string[] = [];
   for (const field of requiredFields) {
-    const regex = new RegExp(`${field.path}:\\s*\\n\\s*name:\\s*["']?([^"'\\n]+)`);
-    const match = content.match(regex);
-    if (!match || !match[1] || match[1].trim() === "") {
+    if (extractFlatYamlField(content, field.path) === "") {
       missingFields.push(field.label);
     }
   }
