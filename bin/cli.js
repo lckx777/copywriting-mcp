@@ -76,11 +76,14 @@ switch (cmd) {
 
   case 'start': {
     console.log('Starting Copywriting MCP Server...');
+    const srcServer = path.join(PLUGIN_DIR, 'src', 'server.ts');
     const distServer = path.join(PLUGIN_DIR, 'dist', 'server.js');
-    if (fs.existsSync(distServer)) {
-      execSync(`node ${distServer}`, { stdio: 'inherit' });
+    if (fs.existsSync(srcServer)) {
+      execSync(`bun ${srcServer}`, { cwd: PLUGIN_DIR, stdio: 'inherit' });
+    } else if (fs.existsSync(distServer)) {
+      execSync(`bun ${distServer}`, { cwd: PLUGIN_DIR, stdio: 'inherit' });
     } else {
-      console.log('Server not built. Run: copywriting-mcp install');
+      console.log('Server not found. Run: copywriting-mcp install');
       process.exit(1);
     }
     break;
